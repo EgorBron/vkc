@@ -94,6 +94,8 @@ var PrefixRegexStr PrefixMatcherProvider[string] = func(matcher string) PrefixMa
 // Функция должна возвращать два значения: булев (найден ли префикс в строке) и строку (весь текст после префикса).
 //
 // Изначально задумывалось, что провайдер будет получать дополнительный контекст для кастомизации префикса, но пока что данный функционал отсутствует.
+//
+// TODO: https://github.com/EgorBron/vkc/issues/4
 var PrefixFunc PrefixMatcherProvider[func(string) (bool, string)] = func(matcher func(string) (bool, string)) PrefixMatcher {
 	return matcher
 }
