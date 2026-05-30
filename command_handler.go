@@ -1,9 +1,5 @@
 package vkc
 
-import (
-	"log"
-)
-
 // Функция обработчика команды. Получает контекст и возвращает ошибку или nil.
 type HandlerFunc[DEPS any] func(ctx CommandContext[DEPS]) error
 
@@ -51,9 +47,5 @@ type CommandHandler[DEPS any] struct {
 
 // Метод для проверки доступности команды для пользователя.
 func (handler *CommandHandler[any]) IsAccessAvailable(ctx CommandContext[any]) bool {
-	log.Println(handler.AccessCheck == nil)
-	if handler.AccessCheck != nil {
-		log.Println(!handler.AccessCheck.Checker(handler, ctx))
-	}
 	return handler.AccessCheck == nil || handler.AccessCheck.Checker(handler, ctx)
 }
