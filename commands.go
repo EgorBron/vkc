@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/SevereCloud/vksdk/v3/api"
 	"github.com/SevereCloud/vksdk/v3/events"
@@ -39,6 +40,8 @@ func logDeprecationWarning(feature string) {
 // Для динамического управления командами используйте методы [Commands.Register], [Commands.Unregister], [Commands.Replace] и др. (см. [command_management.go]).
 // Эти методы позволяют безопасно добавлять, удалять и изменять команды в рантайме с соблюдением обратной совместимости.
 type Commands[DEPS any] struct {
+	cmdMutex sync.RWMutex
+
 	Prefix PrefixMatcher
 	// Структура для передачи зависимостей в обработчики команд. Если зависимости не требуются, можно указать any в дженерике.
 	//
@@ -146,9 +149,11 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 		return ErrEmptyPrefix
 	}
 
-	// TODO: v2 mutex
+	commands.cmdMutex.RLock()
 	handlers := make([]*CommandHandler[any], len(commands.Handlers))
 	copy(handlers, commands.Handlers)
+	commands.cmdMutex.RUnlock()
+
 	handler, remaining := FindCommand(rawCmd, handlers)
 	if handler == nil {
 		if commands.OnUnknownCommand != nil {

@@ -10,6 +10,9 @@ import "fmt"
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) Register(handler *CommandHandler[DEPS]) (int, error) {
+	commands.cmdMutex.Lock()
+	defer commands.cmdMutex.Unlock()
+
 	if handler == nil {
 		return -1, fmt.Errorf("nil handler")
 	}
@@ -24,6 +27,9 @@ func (commands *Commands[DEPS]) Register(handler *CommandHandler[DEPS]) (int, er
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) Unregister(handler *CommandHandler[DEPS]) error {
+	commands.cmdMutex.Lock()
+	defer commands.cmdMutex.Unlock()
+
 	if handler == nil {
 		return fmt.Errorf("nil handler")
 	}
@@ -42,6 +48,9 @@ func (commands *Commands[DEPS]) Unregister(handler *CommandHandler[DEPS]) error 
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) UnregisterAt(index int) error {
+	commands.cmdMutex.Lock()
+	defer commands.cmdMutex.Unlock()
+
 	if index < 0 || index >= len(commands.Handlers) {
 		return fmt.Errorf("index out of range")
 	}
@@ -56,6 +65,9 @@ func (commands *Commands[DEPS]) UnregisterAt(index int) error {
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) Replace(index int, handler *CommandHandler[DEPS]) error {
+	commands.cmdMutex.Lock()
+	defer commands.cmdMutex.Unlock()
+
 	if handler == nil {
 		return fmt.Errorf("nil handler")
 	}
@@ -71,6 +83,9 @@ func (commands *Commands[DEPS]) Replace(index int, handler *CommandHandler[DEPS]
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) FindHandlerIndex(handler *CommandHandler[DEPS]) int {
+	commands.cmdMutex.RLock()
+	defer commands.cmdMutex.RUnlock()
+
 	for i, h := range commands.Handlers {
 		if h == handler {
 			return i
@@ -83,6 +98,9 @@ func (commands *Commands[DEPS]) FindHandlerIndex(handler *CommandHandler[DEPS]) 
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) HandlersCount() int {
+	commands.cmdMutex.RLock()
+	defer commands.cmdMutex.RUnlock()
+
 	return len(commands.Handlers)
 }
 
@@ -92,6 +110,9 @@ func (commands *Commands[DEPS]) HandlersCount() int {
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) GetHandlers() []*CommandHandler[DEPS] {
+	commands.cmdMutex.RLock()
+	defer commands.cmdMutex.RUnlock()
+
 	out := make([]*CommandHandler[DEPS], len(commands.Handlers))
 	copy(out, commands.Handlers)
 	return out
@@ -101,5 +122,8 @@ func (commands *Commands[DEPS]) GetHandlers() []*CommandHandler[DEPS] {
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
 func (commands *Commands[DEPS]) ClearHandlers() {
+	commands.cmdMutex.Lock()
+	defer commands.cmdMutex.Unlock()
+
 	commands.Handlers = make([]*CommandHandler[DEPS], 0)
 }
