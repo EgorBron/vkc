@@ -9,7 +9,7 @@ import "fmt"
 // Если обработчик был nil, возвращает ошибку.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) Register(handler *CommandHandler[DEPS]) (int, error) {
+func (commands *Commands[DEPS]) Register(handler *CommandHandler[DEPS]) (int, error) {
 	if handler == nil {
 		return -1, fmt.Errorf("nil handler")
 	}
@@ -23,7 +23,7 @@ func (commands Commands[DEPS]) Register(handler *CommandHandler[DEPS]) (int, err
 // Также возвращает ошибку, если передан nil вместо обработчика.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) Unregister(handler *CommandHandler[DEPS]) error {
+func (commands *Commands[DEPS]) Unregister(handler *CommandHandler[DEPS]) error {
 	if handler == nil {
 		return fmt.Errorf("nil handler")
 	}
@@ -41,7 +41,7 @@ func (commands Commands[DEPS]) Unregister(handler *CommandHandler[DEPS]) error {
 // Если индекс выходит за пределы внутреннего среза, возвращает ошибку.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) UnregisterAt(index int) error {
+func (commands *Commands[DEPS]) UnregisterAt(index int) error {
 	if index < 0 || index >= len(commands.Handlers) {
 		return fmt.Errorf("index out of range")
 	}
@@ -55,7 +55,7 @@ func (commands Commands[DEPS]) UnregisterAt(index int) error {
 // Также возвращает ошибку, если передан nil вместо обработчика.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) Replace(index int, handler *CommandHandler[DEPS]) error {
+func (commands *Commands[DEPS]) Replace(index int, handler *CommandHandler[DEPS]) error {
 	if handler == nil {
 		return fmt.Errorf("nil handler")
 	}
@@ -70,7 +70,7 @@ func (commands Commands[DEPS]) Replace(index int, handler *CommandHandler[DEPS])
 // Если обработчик не найден, возвращает -1.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) FindHandlerIndex(handler *CommandHandler[DEPS]) int {
+func (commands *Commands[DEPS]) FindHandlerIndex(handler *CommandHandler[DEPS]) int {
 	for i, h := range commands.Handlers {
 		if h == handler {
 			return i
@@ -82,7 +82,7 @@ func (commands Commands[DEPS]) FindHandlerIndex(handler *CommandHandler[DEPS]) i
 // Возвращает количество зарегистрированных обработчиков.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) HandlersCount() int {
+func (commands *Commands[DEPS]) HandlersCount() int {
 	return len(commands.Handlers)
 }
 
@@ -91,7 +91,7 @@ func (commands Commands[DEPS]) HandlersCount() int {
 // Изменение возвращённого среза не повлияет на внутреннее состояние Commands.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) GetHandlers() []*CommandHandler[DEPS] {
+func (commands *Commands[DEPS]) GetHandlers() []*CommandHandler[DEPS] {
 	out := make([]*CommandHandler[DEPS], len(commands.Handlers))
 	copy(out, commands.Handlers)
 	return out
@@ -100,6 +100,6 @@ func (commands Commands[DEPS]) GetHandlers() []*CommandHandler[DEPS] {
 // Устанавливает список обработчиков в пустой срез.
 //
 // `Предупреждение!` Метод не потокобезопасный. Пользуйтесь внешними примитивами синхронизации. Будет исправлено в версии v2.
-func (commands Commands[DEPS]) ClearHandlers() {
+func (commands *Commands[DEPS]) ClearHandlers() {
 	commands.Handlers = make([]*CommandHandler[DEPS], 0)
 }

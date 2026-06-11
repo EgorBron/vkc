@@ -25,7 +25,7 @@ func TestRegister(t *testing.T) {
 	}
 
 	if i, err := commands.Register(handler2); i != 1 || err != nil {
-		t.Fatalf("Register failed: %v", err)
+		t.Fatalf("Register failed: %d %v", i, err)
 	}
 
 	// Проверяем количество обработчиков

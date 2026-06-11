@@ -110,7 +110,7 @@ func FindCommand[DEPS any](rawCmd string, commands []*CommandHandler[DEPS]) (*Co
 //   - они вызываются только если были установлены при создании структуры;
 //   - они выполняются в отдельных горутинах;
 //   - все они устарели и будут удалены в v2. Рекомендуется вместо этого обрабатывать ошибки метода ProcessCommands напрямую.
-func (commands Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, msg events.MessageNewObject) error {
+func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, msg events.MessageNewObject) error {
 	text := strings.TrimSpace(msg.Message.Text)
 	if text == "" {
 		return ErrEmptyMessage
@@ -188,7 +188,7 @@ func (commands Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, m
 // Подключение обработчика команд к LongPoll VK SDK.
 //
 // Deprecated: Будет удалено в v2. Рекомендуется вызывать [Commands.ProcessCommands] напрямую из обработчика сообщений, вместо использования этого метода.
-func (commands Commands[any]) AttachToLongPoll(vk *api.VK, lp *longpoll.LongPoll) error {
+func (commands *Commands[any]) AttachToLongPoll(vk *api.VK, lp *longpoll.LongPoll) error {
 	if lp == nil {
 		return fmt.Errorf("LongPoll was nil")
 	}
