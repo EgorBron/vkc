@@ -35,13 +35,17 @@ func logDeprecationWarning(feature string) {
 // Причин для соблюдения именно этого стиля нет. Возможно, что это плохое решение.
 //
 // Также в структуре есть поля для колбеков на события: OnMessage, OnEmptyPrefix, OnUnknownCommand, OnNoPermissions, OnCommandError. Их передача необязательна, однако, если указать эти обработчики, то они будут вызваны при соответствующих событиях.
+//
+// Для динамического управления командами используйте методы [Commands.Register], [Commands.Unregister], [Commands.Replace] и др. (см. [command_management.go]).
+// Эти методы позволяют безопасно добавлять, удалять и изменять команды в рантайме с соблюдением обратной совместимости.
 type Commands[DEPS any] struct {
 	Prefix PrefixMatcher
 	// Структура для передачи зависимостей в обработчики команд. Если зависимости не требуются, можно указать any в дженерике.
 	//
 	// Deprecated: Начиная с v2 будет удалено. Рекомендуется перейти на [context.Context] (см. https://github.com/EgorBron/vkc/issues/2 для просмотра обсуждения).
 	Dependencies DEPS
-	Handlers     []*CommandHandler[DEPS]
+	// Deprecated: Начиная с v2 будет скрыто. Рекомендуется перейти на управление командами через методы [Commands.Register], [Commands.Unregister] и др. (см. command_management.go).
+	Handlers []*CommandHandler[DEPS]
 
 	// Deprecated: Начиная с v2 будет удалено. Рекомендуется переход на вызов [ProcessCommands].
 	OnMessage *func(vk *api.VK, obj events.MessageNewObject)
@@ -142,7 +146,10 @@ func (commands Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, m
 		return ErrEmptyPrefix
 	}
 
-	handler, remaining := FindCommand(rawCmd, commands.Handlers)
+	// TODO: v2 mutex
+	handlers := make([]*CommandHandler[any], len(commands.Handlers))
+	copy(handlers, commands.Handlers)
+	handler, remaining := FindCommand(rawCmd, handlers)
 	if handler == nil {
 		if commands.OnUnknownCommand != nil {
 			logDeprecationWarning("OnUnknownCommand")
