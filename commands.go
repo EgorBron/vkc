@@ -110,7 +110,7 @@ func FindCommand[DEPS any](rawCmd string, commands []*CommandHandler[DEPS]) (*Co
 //   - они вызываются только если были установлены при создании структуры;
 //   - они выполняются в отдельных горутинах;
 //   - все они устарели и будут удалены в v2. Рекомендуется вместо этого обрабатывать ошибки метода ProcessCommands напрямую.
-func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, msg events.MessageNewObject) error {
+func (commands Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, msg events.MessageNewObject) error {
 	text := strings.TrimSpace(msg.Message.Text)
 	if text == "" {
 		return ErrEmptyMessage
