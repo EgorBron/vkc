@@ -23,6 +23,12 @@ func logDeprecationWarning(feature string) {
 	log.Printf("обработчик %s скоро перестанет вызываться. См.: https://github.com/EgorBron/vkc/issues/1", feature)
 }
 
+type CommandsOptions struct { // TODO: задокументировать в v1.3.0
+	AllowPrefixless  bool
+	stripSpaces      bool
+	stripPunctuation bool
+}
+
 // Структура для управления командами. Содержит обработчики, префикс и зависимости.
 // Структуру можно типизировать дженериком для передачи зависимостей в обработчики команд, или передать any в дженерик, если это не требуется.
 // Для обработчиков команд опеределено поле Handlers, принимающее массив указателей на обработчики. Рекомендуется получать адрес обработчика прямо при передаче в массив, как здесь:
@@ -42,7 +48,11 @@ func logDeprecationWarning(feature string) {
 type Commands[DEPS any] struct {
 	cmdMutex sync.RWMutex
 
+	// Префикс для команд.
 	Prefix PrefixMatcher
+
+	Options CommandsOptions
+
 	// Структура для передачи зависимостей в обработчики команд. Если зависимости не требуются, можно указать any в дженерике.
 	//
 	// Deprecated: Начиная с v2 будет удалено. Рекомендуется перейти на [context.Context] (см. https://github.com/EgorBron/vkc/issues/2 для просмотра обсуждения).
@@ -62,7 +72,7 @@ type Commands[DEPS any] struct {
 	OnCommandError *func(ctx CommandContext[DEPS], err error)
 }
 
-// Поиск команды по строке. Возвращает найденный обработчик и остаток строки (т.е. без названия команды).
+// ППоиск команды по строке. Возвращает найденный обработчик и остаток строки (т.е. без названия команды).
 //
 // Поскольку срезы в Go являются упорядоченными, то при поиске приоритет будут иметь обработчики, расположенные ближе к началу среза.
 //
@@ -75,6 +85,8 @@ type Commands[DEPS any] struct {
 //	 FindCommand("tag me", handlers), есть обработчики Text("tag") и Text("tag me") -> (обработчик для Text("tag"), остаток - "me")
 //
 // и так далее.
+//
+// Deprecated: будет удалено в v2. Функция больше не используется.
 func FindCommand[DEPS any](rawCmd string, commands []*CommandHandler[DEPS]) (*CommandHandler[DEPS], string) {
 	for _, handler := range commands {
 		if handler == nil {
@@ -86,7 +98,7 @@ func FindCommand[DEPS any](rawCmd string, commands []*CommandHandler[DEPS]) (*Co
 		for i := len(words); i > 0; i-- {
 			candidate := strings.Join(words[:i], " ")
 
-			if handler.Pattern(candidate) {
+			if handler.Pattern != nil && handler.Pattern(candidate) {
 				return handler, strings.Join(words[i:], " ")
 			}
 		}
@@ -130,7 +142,10 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 
 	matched, rawCmd := commands.Prefix(text)
 	if !matched {
-		return ErrNoPrefix
+		if !commands.Options.AllowPrefixless {
+			return ErrNoPrefix
+		}
+		rawCmd = text
 	}
 
 	cmdCtx := CommandContext[any]{
@@ -154,7 +169,27 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 	copy(handlers, commands.Handlers)
 	commands.cmdMutex.RUnlock()
 
-	handler, remaining := FindCommand(rawCmd, handlers)
+	var handler *CommandHandler[any]
+	var remainder string
+	for _, h := range handlers {
+		if r, s := h.IsNotFiltered(cmdCtx, rawCmd); r {
+			handler = h
+
+			if rs, ok := s["command_regex_filter_groups"].(string); ok {
+				remainder = rs
+			}
+
+			if rs, ok := s["prefix_filter_remainder"].(string); ok {
+				remainder = rs
+			}
+
+			break
+		}
+	}
+	if handler == nil {
+		handler, remainder = FindCommand(rawCmd, handlers)
+	}
+
 	if handler == nil {
 		if commands.OnUnknownCommand != nil {
 			logDeprecationWarning("OnUnknownCommand")
@@ -163,7 +198,7 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 		return ErrCommandNotFound
 	}
 
-	cmdCtx.Arguments = SplitArgs(remaining)
+	cmdCtx.Arguments = SplitArgs(remainder)
 
 	if !handler.IsAccessAvailable(cmdCtx) {
 		if commands.OnNoPermissions != nil {

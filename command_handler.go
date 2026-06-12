@@ -1,5 +1,10 @@
 package vkc
 
+import (
+	"txts.su/vkc/filters"
+	vkfilters "txts.su/vkc/filters/vk_filters"
+)
+
 // Функция обработчика команды. Получает контекст и возвращает ошибку или nil.
 type HandlerFunc[DEPS any] func(ctx CommandContext[DEPS]) error
 
@@ -33,16 +38,31 @@ type HandlerAccessCheck[DEPS any] struct {
 //	из дженерика в объекте команд;
 //	впоследствии в контекст обработчика будет передано значение этого типа в поле Dependency */
 //	var HandleSomeCommand = CommandHandler[DepsType]{
-//		Pattern: Text("some"), // шаблон "только строка `some`"
+//		Filter: filter.PrefixF("some") // шаблон "только строка `some`"
 //		Help: CommandHelp{ /* помощь по команде */ },
 //		AccessCheck: &HandlerAccessCheck[DepsType]{ /* проверка доступа */ },
 //		Executor: func(ctx CommandContext[DepsType]) error { /* логика команды */ },
 //	}
 type CommandHandler[DEPS any] struct {
-	Pattern     CommandPattern
-	Help        CommandHelp
+	// Фильтр, совпадение с которым запустит команду
+	Filter filters.Filter
+	// Deprecated: будет удалено в v2. Используйте [CommandHandler.Filter].
+	Pattern CommandPattern
+	// Помощь по команде
+	Help CommandHelp
+	// Проверка на доступ к команде
 	AccessCheck *HandlerAccessCheck[DEPS]
-	Executor    HandlerFunc[DEPS]
+	// Исполнитель команды
+	Executor HandlerFunc[DEPS]
+}
+
+// Метод для проверки совпадения контекста с фильтром команды.
+func (handler *CommandHandler[T]) IsNotFiltered(ctx CommandContext[T], prefixRemainder string) (result bool, sideValues map[string]any) {
+	return handler.Filter.Eval(map[filters.FieldDescriptor]any{
+		vkfilters.MessageField: ctx.Message,
+		vkfilters.VkApiField:   ctx.VK,
+		filters.TextField:      prefixRemainder,
+	})
 }
 
 // Метод для проверки доступности команды для пользователя.
