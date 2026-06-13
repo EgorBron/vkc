@@ -175,6 +175,10 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 		if r, s := h.IsNotFiltered(cmdCtx, rawCmd); r {
 			handler = h
 
+			if s == nil {
+				break
+			}
+
 			if rs, ok := s["command_regex_filter_groups"].(string); ok {
 				remainder = rs
 			}
