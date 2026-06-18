@@ -10,8 +10,12 @@ import "slices"
 // Возвращаемые побочные значения:
 //   - `list_filter_match_index` - индекс совпавшего элемента или -1 при отсутствии совпадений.
 func InList[T comparable](field FieldDescriptor, list []T) Filter {
-	return NewFilter(field, func(value T) (bool, map[string]any) {
-		idx := slices.Index(list, value)
-		return idx >= 0, map[string]any{"list_filter_match_index": idx}
-	})
+	return NewExtractableFilter(field,
+		func(value T) bool {
+			return slices.Index(list, value) >= 0
+		},
+		func(value T) MatchResult {
+			return MatchResult{"list_filter_match_index": slices.Index(list, value)}
+		},
+	)
 }

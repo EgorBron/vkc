@@ -7,14 +7,22 @@ import (
 	"github.com/SevereCloud/vksdk/v3/api/params"
 	"github.com/SevereCloud/vksdk/v3/events"
 	"github.com/SevereCloud/vksdk/v3/object"
+	"txts.su/vkc/filters"
 )
 
 // Контекст команды. Передается в каждый обработчик.
 type CommandContext[DEPS any] struct {
-	VK         *api.VK
-	Message    object.MessagesMessage
-	Arguments  []string
-	RawEvent   events.MessageNewObject
+	// Объект API VK.
+	VK *api.VK
+	// Сообщение, вызвавшее команду.
+	Message object.MessagesMessage
+	// Список аргументов команды. Если аргументы не удалось получить, срез будет пуст.
+	Arguments []string
+	// Результаты извлечений из фильтра команды (остаток строки, группы regex и т.д.).
+	FilterMatch filters.MatchResult
+	// Исходное событие message_new.
+	RawEvent events.MessageNewObject
+	// Объект с зависимостями всей системы команд.
 	Dependency DEPS
 }
 

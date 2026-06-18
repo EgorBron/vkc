@@ -57,12 +57,22 @@ type CommandHandler[DEPS any] struct {
 }
 
 // Метод для проверки совпадения контекста с фильтром команды.
-func (handler *CommandHandler[T]) IsNotFiltered(ctx CommandContext[T], prefixRemainder string) (result bool, sideValues map[string]any) {
-	return handler.Filter.Eval(map[filters.FieldDescriptor]any{
+func (handler *CommandHandler[T]) IsNotFiltered(ctx CommandContext[T], prefixRemainder string) (result bool, sideValues filters.MatchResult) {
+	input := map[filters.FieldDescriptor]any{
 		vkfilters.MessageField: ctx.Message,
 		vkfilters.VkApiField:   ctx.VK,
 		filters.TextField:      prefixRemainder,
-	})
+	}
+	if !handler.Filter.Eval(input) {
+		return false, nil
+	}
+	// по умолчанию grfilt работает с "чистыми" фильтрами.
+	// а для работы команд необходимо еще и знать контекст срабатывания фильтра,
+	// поэтому в vkc используются фильтры с извлечениями.
+	if ex, ok := handler.Filter.(filters.Extractor); ok {
+		return true, ex.Extract(input)
+	}
+	return true, nil
 }
 
 // Метод для проверки доступности команды для пользователя.

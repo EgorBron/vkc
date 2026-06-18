@@ -17,6 +17,7 @@ import (
 	"github.com/SevereCloud/vksdk/v3/api"
 	"github.com/SevereCloud/vksdk/v3/events"
 	"github.com/SevereCloud/vksdk/v3/longpoll-bot"
+	"txts.su/vkc/filters"
 )
 
 func logDeprecationWarning(feature string) {
@@ -170,28 +171,17 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 	commands.cmdMutex.RUnlock()
 
 	var handler *CommandHandler[any]
-	var remainder string
+	var matchResult filters.MatchResult
+	var legacyRemainder string
 	for _, h := range handlers {
-		if r, s := h.IsNotFiltered(cmdCtx, rawCmd); r {
+		if matched, match := h.IsNotFiltered(cmdCtx, rawCmd); matched {
 			handler = h
-
-			if s == nil {
-				break
-			}
-
-			if rs, ok := s["command_regex_filter_groups"].(string); ok {
-				remainder = rs
-			}
-
-			if rs, ok := s["prefix_filter_remainder"].(string); ok {
-				remainder = rs
-			}
-
+			matchResult = match
 			break
 		}
 	}
 	if handler == nil {
-		handler, remainder = FindCommand(rawCmd, handlers)
+		handler, legacyRemainder = FindCommand(rawCmd, handlers)
 	}
 
 	if handler == nil {
@@ -202,7 +192,12 @@ func (commands *Commands[any]) ProcessCommands(ctx context.Context, vk *api.VK, 
 		return ErrCommandNotFound
 	}
 
-	cmdCtx.Arguments = SplitArgs(remainder)
+	cmdCtx.FilterMatch = matchResult
+	if matchResult != nil {
+		cmdCtx.Arguments = ArgumentsFromMatch(matchResult)
+	} else {
+		cmdCtx.Arguments = SplitArgs(legacyRemainder)
+	}
 
 	if !handler.IsAccessAvailable(cmdCtx) {
 		if commands.OnNoPermissions != nil {
