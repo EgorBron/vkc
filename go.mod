@@ -2,7 +2,10 @@ module txts.su/vkc
 
 go 1.26.0
 
-require github.com/SevereCloud/vksdk/v3 v3.2.2
+require (
+	github.com/SevereCloud/vksdk/v3 v3.2.2
+	txts.su/grfilt v1.0.0
+)
 
 require (
 	github.com/klauspost/compress v1.18.0 // indirect
